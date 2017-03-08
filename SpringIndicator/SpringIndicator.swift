@@ -107,6 +107,7 @@ open class SpringIndicator: UIView {
         
         fileprivate var RefresherContext = UInt8()
         fileprivate var initialInsetTop: CGFloat = 0
+        open var topInset: CGFloat = 0
         open let indicator = SpringIndicator(frame: CGRect(x: 0, y: 0, width: 20, height: 20))
         open fileprivate(set) var refreshing: Bool = false
         open var targetView: UIScrollView? {
@@ -201,7 +202,7 @@ open class SpringIndicator: UIView {
                     }
                     
                     if superview == scrollView {
-                        frame.origin.y = scrollOffset(scrollView)
+                        frame.origin.y = scrollOffset(scrollView) + topInset
                     }
                     
                     if indicator.isSpinning() {
@@ -483,10 +484,7 @@ extension SpringIndicator.Refresher {
     }
     
     fileprivate func scrollOffset(_ scrollView: UIScrollView) -> CGFloat {
-        var offsetY = scrollView.contentOffset.y
-        offsetY += initialInsetTop
-        
-        return offsetY
+        return scrollView.contentOffset.y + initialInsetTop
     }
     
     fileprivate func scrollRatio(_ scrollView: UIScrollView) -> CGFloat {
