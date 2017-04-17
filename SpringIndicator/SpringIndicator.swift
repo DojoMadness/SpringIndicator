@@ -12,34 +12,26 @@ import UIKit
 open class SpringIndicator: UIView {
     fileprivate typealias Me = SpringIndicator
     
-    fileprivate static let RotateAnimationKey = "rotateAnimation"
-    fileprivate static let ExpandAnimationKey = "expandAnimation"
-    fileprivate static let ContractAnimationKey = "contractAnimation"
-    fileprivate static let GroupAnimationKey = "groupAnimation"
+    fileprivate static let rotateAnimationKey = "rotateAnimation"
+    fileprivate static let expandAnimationKey = "expandAnimation"
+    fileprivate static let contractAnimationKey = "contractAnimation"
+    fileprivate static let groupAnimationKey = "groupAnimation"
     
-    fileprivate static let StrokeTiming = [0, 0.3, 0.5, 0.7, 1]
-    fileprivate static let StrokeValues = [0, 0.1, 0.5, 0.9, 1]
+    fileprivate static let strokeTiming = [0, 0.3, 0.5, 0.7, 1]
+    fileprivate static let strokeValues = [0, 0.1, 0.5, 0.9, 1]
     
-    fileprivate static let DispatchQueueLabelTimer = "SpringIndicator.Timer.Thread"
-    fileprivate static let timerQueue = DispatchQueue(label: DispatchQueueLabelTimer, attributes: DispatchQueue.Attributes.concurrent)
-    fileprivate static let timerRunLoop = RunLoop.current
-    fileprivate static let timerPort = Port()
+    fileprivate static let dispatchQueueLabelTimer = "SpringIndicator.Timer.Thread"
     
-    open override class func initialize() {
-        super.initialize()
-        
-        timerQueue.async {
-            self.timerRunLoop.add(self.timerPort, forMode: RunLoopMode.commonModes)
-            self.timerRunLoop.run()
-        }
-    }
+    fileprivate let timerQueue = DispatchQueue(label: dispatchQueueLabelTimer, attributes: DispatchQueue.Attributes.concurrent)
+    fileprivate let timerRunLoop = RunLoop.current
+    fileprivate let timerPort = Port()
     
     fileprivate var strokeTimer: Timer? {
         didSet {
             oldValue?.invalidate()
         }
     }
-    fileprivate var rotateThreshold = (M_PI / M_PI_2 * 2) - 1
+    fileprivate var rotateThreshold = (Double.pi / (Double.pi/2) * 2) - 1
     fileprivate var indicatorView: UIView
     fileprivate var animationCount: Double = 0
     fileprivate var pathLayer: CAShapeLayer? {
@@ -69,6 +61,7 @@ open class SpringIndicator: UIView {
     public override init(frame: CGRect) {
         indicatorView = UIView(frame: CGRect(x: 0, y: 0, width: frame.width, height: frame.height))
         super.init(frame: frame)
+        initialize()
         indicatorView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         addSubview(indicatorView)
         
@@ -78,11 +71,19 @@ open class SpringIndicator: UIView {
     public required init?(coder aDecoder: NSCoder) {
         indicatorView = UIView()
         super.init(coder: aDecoder)
+        initialize()
         indicatorView.frame = bounds
         indicatorView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         addSubview(indicatorView)
         
         backgroundColor = UIColor.clear
+    }
+    
+    private func initialize() {
+        timerQueue.async {
+            self.timerRunLoop.add(self.timerPort, forMode: RunLoopMode.commonModes)
+            self.timerRunLoop.run()
+        }
     }
     
     open override func draw(_ rect: CGRect) {
@@ -95,7 +96,7 @@ open class SpringIndicator: UIView {
     
     /// During stroke animation is true.
     open func isSpinning() -> Bool {
-        return pathLayer?.animation(forKey: Me.ContractAnimationKey) != nil || pathLayer?.animation(forKey: Me.GroupAnimationKey) != nil
+        return pathLayer?.animation(forKey: Me.contractAnimationKey) != nil || pathLayer?.animation(forKey: Me.groupAnimationKey) != nil
     }
     
     open class Refresher: UIControl {
@@ -239,8 +240,8 @@ open class SpringIndicator: UIView {
     fileprivate func nextRotatePath(_ count: Double) -> UIBezierPath {
         animationCount = count
         
-        let start = CGFloat(M_PI_2 * (0 - count))
-        let end = CGFloat(M_PI_2 * (rotateThreshold - count))
+        let start = CGFloat((Double.pi/2) * (0 - count))
+        let end = CGFloat((Double.pi/2) * (rotateThreshold - count))
         let center = CGPoint(x: bounds.width / 2, y: bounds.height / 2)
         let radius = max(bounds.width, bounds.height) / 2
         
@@ -279,7 +280,7 @@ public extension SpringIndicator {
         }
         
         let animation = rotateAnimation(rotateDuration)
-        indicatorView.layer.add(animation, forKey: Me.RotateAnimationKey)
+        indicatorView.layer.add(animation, forKey: Me.rotateAnimationKey)
         
         strokeTransaction(expand)
         
@@ -339,7 +340,7 @@ public extension SpringIndicator {
     }
     
     fileprivate func nextAnimationKey(_ expand: Bool) -> String {
-        return expand ? Me.ContractAnimationKey : Me.GroupAnimationKey
+        return expand ? Me.contractAnimationKey : Me.groupAnimationKey
     }
     
     fileprivate func nextAnimationCount(_ expand: Bool) -> Double {
@@ -355,8 +356,8 @@ public extension SpringIndicator {
         let anim = CABasicAnimation(keyPath: "transform.rotation.z")
         anim.duration = duration
         anim.repeatCount = HUGE
-        anim.fromValue = -(M_PI + M_PI_4)
-        anim.toValue = M_PI - M_PI_4
+        anim.fromValue = -(Double.pi + (Double.pi/4))
+        anim.toValue = Double.pi - (Double.pi/4)
         anim.isRemovedOnCompletion = false
         
         return anim
@@ -381,8 +382,8 @@ public extension SpringIndicator {
     fileprivate func contractAnimation(_ duration: CFTimeInterval) -> CAPropertyAnimation {
         let anim = CAKeyframeAnimation(keyPath: "strokeStart")
         anim.duration = duration
-        anim.keyTimes = Me.StrokeTiming as [NSNumber]?
-        anim.values = Me.StrokeValues
+        anim.keyTimes = Me.strokeTiming as [NSNumber]?
+        anim.values = Me.strokeValues
         anim.fillMode = kCAFillModeForwards
         anim.isRemovedOnCompletion = false
         
@@ -392,8 +393,8 @@ public extension SpringIndicator {
     fileprivate func expandAnimation(_ duration: CFTimeInterval) -> CAPropertyAnimation {
         let anim = CAKeyframeAnimation(keyPath: "strokeEnd")
         anim.duration = duration
-        anim.keyTimes = Me.StrokeTiming as [NSNumber]?
-        anim.values = Me.StrokeValues
+        anim.keyTimes = Me.strokeTiming as [NSNumber]?
+        anim.values = Me.strokeValues
         
         return anim
     }
@@ -407,7 +408,7 @@ extension SpringIndicator {
     
     fileprivate func setStrokeTimer(_ timer: Timer) {
         strokeTimer = timer
-        Me.timerRunLoop.add(timer, forMode: RunLoopMode.commonModes)
+        timerRunLoop.add(timer, forMode: RunLoopMode.commonModes)
     }
     
     func onStrokeTimer(_ sender: AnyObject) {
@@ -419,8 +420,8 @@ extension SpringIndicator {
         }
         
         if let timer = sender as? Timer, timer.isValid {
-            if let key = timer.userInfo as? String, key == Me.ContractAnimationKey {
-                let timer = createStrokeTimer(timeInterval: strokeDuration * 2, userInfo: Me.GroupAnimationKey as AnyObject?, repeats: true)
+            if let key = timer.userInfo as? String, key == Me.contractAnimationKey {
+                let timer = createStrokeTimer(timeInterval: strokeDuration * 2, userInfo: Me.groupAnimationKey as AnyObject?, repeats: true)
                 
                 setStrokeTimer(timer)
             }
@@ -503,7 +504,7 @@ extension SpringIndicator.Refresher {
         
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        indicator.indicatorView.layer.transform = CATransform3DMakeRotation(CGFloat(M_PI - M_PI_4) * value, 0, 0, 1)
+        indicator.indicatorView.layer.transform = CATransform3DMakeRotation(CGFloat(Double.pi - (Double.pi/4)) * value, 0, 0, 1)
         CATransaction.commit()
     }
 }
